@@ -1,0 +1,48 @@
+---
+title: "Project - Template"
+author: "Dhanushya"
+date: "November 4, 2016"
+output: html_document
+---
+
+data <- read.csv("activity.csv")
+## Total Number of Steps Taken Per Day
+totalstepseachday <- aggregate(steps ~ date, data, sum)
+hist(totalstepseachday$steps, main = paste("Total Steps Each Day"), col="purple", xlab="Number of Steps")
+## Mean & Median of Total Number of Steps Taken Per Day
+rmean <- mean(totalstepseachday$steps)
+rmedian <- median(totalstepseachday$steps)
+## Average Daily Activity Pattern Five Minute Interval
+avgintervalsteps <- aggregate(steps ~ interval, data, mean)
+
+plot(avgintervalsteps$interval,avgintervalsteps$steps, type="l", xlab="Interval", ylab="Number of Steps",main="Average Number of Steps per Day by Interval")
+
+max_interval <- avgintervalsteps[which.max(avgintervalsteps$steps),1]
+## Imputing Missing Values
+incomplete <- sum(!complete.cases(data))
+imputeddata <- transform(data, steps = ifelse(is.na(data$steps), avgintervalsteps$steps[match(data$interval, avgintervalsteps$interval)], data$steps))
+
+eachdaysteps <- aggregate(steps ~ date, imputeddata, sum)
+hist(eachdaysteps$steps, main = paste("Total Steps Each Day"), col="green", xlab="Number of Steps")
+
+# Histogram to show difference. 
+hist(totalstepseachday$steps, main = paste("Total Steps Each Day"), col="red", xlab="Number of Steps", add=T)
+legend("topright", c("Imputed", "Non-imputed"), col=c("green", "red"), lwd=10)
+
+rmeannew <- mean(eachdaysteps$steps)
+rmediannew <- median(eachdaysteps$steps)
+
+mean_diff <- rmeannew - rmean
+med_diff <- rmediannew - rmedian
+
+total_diff <- sum(eachdaysteps$steps) - sum(totalstepseachday$steps)
+## Activity pattern differences in weekdays and weekends
+weekdays <- c("Monday", "Tuesday", "Wednesday", "Thursday", 
+              "Friday")
+imputeddata$dow = as.factor(ifelse(is.element(weekdays(as.Date(imputeddata$date)),weekdays), "Weekday", "Weekend"))
+
+intervalofeachday <- aggregate(steps ~ interval + dow, imputeddata, mean)
+
+library(lattice)
+
+xyplot(intervalofeachday$steps ~ intervalofeachday$interval|intervalofeachday$dow, main="Average Steps per Day by Interval",xlab="Interval", ylab="Steps", col="pink", layout=c(1,2), type="l")
